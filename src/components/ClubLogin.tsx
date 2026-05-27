@@ -97,7 +97,14 @@ export default function ClubLogin({ onLoginSuccess }: ClubLoginProps) {
     const cleanedEmail = email.trim().toLowerCase();
 
     // 1. Check if login matches Superuser/Master credentials
-    if (cleanedEmail === 'dadoskagiva@gmail.com' && password === 'admin') {
+    const MASTER_CREDS = [
+      { email: 'dadoskagiva@gmail.com', pass: 'admin' },
+      { email: 'master@clubos.com.br', pass: 'admin123' },
+      { email: 'master@clubos.com.br', pass: 'admin' },
+      { email: 'admin@clubos.com.br', pass: 'admin123' },
+    ];
+    const isMasterLogin = MASTER_CREDS.some(c => c.email === cleanedEmail && c.pass === password);
+    if (isMasterLogin) {
       const masterClub: Club = {
         id: 'master_admin',
         name: 'Federação Central (Master Admin)',
@@ -553,19 +560,19 @@ export default function ClubLogin({ onLoginSuccess }: ClubLoginProps) {
               {/* Premium Master Bypass Button */}
               <div className="mb-2.5">
                 <button
-                  onClick={() => handleFastLogin({ id: 'master_admin', name: 'Federação Central', city: 'Cascavel - PR', focus: 'Controle Global Regulatório', email: 'dadoskagiva@gmail.com', password: 'admin', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=80&auto=format&fit=crop' })}
+                  onClick={() => handleFastLogin({ id: 'master_admin', name: 'Federação Central', city: 'Nacional', focus: 'Controle Global Regulatório', email: 'master@clubos.com.br', password: 'admin123', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=80&auto=format&fit=crop' })}
                   type="button"
-                  className="w-full p-3 bg-gradient-to-r from-amber-600/10 to-amber-500/5 hover:from-amber-600/15 hover:to-amber-500/10 border border-amber-500/30 text-left transition flex items-center justify-between rounded-xl text-xs cursor-pointer"
+                  className="w-full p-3 bg-gradient-to-r from-amber-600/20 to-amber-500/10 hover:from-amber-600/30 hover:to-amber-500/20 border border-amber-500/50 text-left transition flex items-center justify-between rounded-xl text-xs cursor-pointer shadow-lg shadow-amber-900/20"
                 >
                   <div className="flex items-center gap-2.5">
-                    <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0" />
+                    <ShieldCheck className="w-6 h-6 text-amber-400 shrink-0" />
                     <div>
-                      <span className="font-extrabold text-amber-400 block uppercase tracking-wider text-[10px]">Portal de Controle Master Admin (Federação)</span>
-                      <span className="text-[9px] text-slate-400 block font-mono">Supervisor Global • dadoskagiva@gmail.com</span>
+                      <span className="font-extrabold text-amber-300 block uppercase tracking-wider text-[11px]">🔐 MASTER ADMIN — Clique aqui para entrar</span>
+                      <span className="text-[9px] text-slate-400 block font-mono mt-0.5">master@clubos.com.br • senha: admin123</span>
                     </div>
                   </div>
-                  <span className="bg-amber-500 text-slate-950 px-2 py-0.5 rounded font-mono font-extrabold uppercase text-[8px] tracking-wider shrink-0 animate-pulse">
-                    ACESSAR SUPLEMENTO
+                  <span className="bg-amber-500 text-slate-950 px-3 py-1 rounded-lg font-black uppercase text-[9px] tracking-wider shrink-0 animate-pulse">
+                    ENTRAR
                   </span>
                 </button>
               </div>
