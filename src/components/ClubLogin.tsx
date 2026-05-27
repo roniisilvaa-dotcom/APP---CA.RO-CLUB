@@ -1,27 +1,16 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Club } from '../types';
-import { 
-  getClubsDatabase, 
-  registerNewClub, 
-  PRE_REGISTERED_CLUBS, 
-  SIMULATED_FEDERATION_CLUBS 
+import {
+  getClubsDatabase,
+  registerNewClub,
+  PRE_REGISTERED_CLUBS,
+  SIMULATED_FEDERATION_CLUBS
 } from '../clubStorage';
-import { 
-  ShieldCheck, 
-  Search, 
-  Plus, 
-  Sparkles, 
-  ArrowRight, 
-  Mail, 
-  Lock, 
-  Globe, 
-  Users, 
-  Building2, 
-  Award,
-  Key,
-  Info,
-  CheckCircle2,
-  AlertTriangle
+import {
+  ShieldCheck, Search, Plus, Sparkles, ArrowRight, Mail, Lock,
+  Globe, Building2, Award, Key, Info, CheckCircle2, AlertTriangle,
+  Users, TrendingUp, Trophy, Zap
 } from 'lucide-react';
 
 interface ClubLoginProps {
@@ -30,585 +19,490 @@ interface ClubLoginProps {
 
 export default function ClubLogin({ onLoginSuccess }: ClubLoginProps) {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg]   = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Registration fields
-  const [regName, setRegName] = useState('');
-  const [regCity, setRegCity] = useState('');
-  const [regFocus, setRegFocus] = useState('Categoria de Base Completa');
-  const [regEmail, setRegEmail] = useState('');
+  const [regName, setRegName]     = useState('');
+  const [regCity, setRegCity]     = useState('');
+  const [regFocus, setRegFocus]   = useState('Categoria de Base Completa');
+  const [regEmail, setRegEmail]   = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [loading, setLoading]     = useState(false);
 
-  // Active db of clubs
   const currentDB = getClubsDatabase();
 
-  // Matched list of pre-registered & simulated federation clubs
   const handleClubSearch = () => {
     if (!searchQuery) return [];
-    
-    const query = searchQuery.toLowerCase();
-    
-    // First, find from actual DB (registered or demo)
-    const dbMatches = currentDB.filter(c => 
-      c.name.toLowerCase().includes(query) || 
-      c.city.toLowerCase().includes(query)
-    );
-
-    // Second, find from pre-registered config list
-    const preMatched = PRE_REGISTERED_CLUBS.filter(c => 
-      !dbMatches.some(db => db.id === c.id) &&
-      (c.name.toLowerCase().includes(query) || c.city.toLowerCase().includes(query))
-    );
-
-    // Third, find from the federated lookups simulator (740+ other clubs)
-    const simulatedMatched = SIMULATED_FEDERATION_CLUBS.filter(c =>
-      !dbMatches.some(db => db.id === c.id) &&
-      !preMatched.some(p => p.id === c.id) &&
-      (c.name.toLowerCase().includes(query) || c.city.toLowerCase().includes(query))
-    );
-
-    return [...dbMatches, ...preMatched, ...simulatedMatched].slice(0, 5);
+    const q = searchQuery.toLowerCase();
+    const dbMatches  = currentDB.filter(c => c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q));
+    const preMatched = PRE_REGISTERED_CLUBS.filter(c => !dbMatches.some(d => d.id === c.id) && (c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q)));
+    const simMatched = SIMULATED_FEDERATION_CLUBS.filter(c => !dbMatches.some(d => d.id === c.id) && !preMatched.some(p => p.id === c.id) && (c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q)));
+    return [...dbMatches, ...preMatched, ...simMatched].slice(0, 5);
   };
-
   const searchResults = handleClubSearch();
 
-  const triggerError = (msg: string) => {
-    setErrorMsg(msg);
-    setTimeout(() => setErrorMsg(null), 5000);
-  };
+  const triggerError   = (msg: string) => { setErrorMsg(msg);   setTimeout(() => setErrorMsg(null), 5000); };
+  const triggerSuccess = (msg: string) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(null), 4000); };
 
-  const triggerSuccess = (msg: string) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(null), 4000);
-  };
-
-  // Submit standard Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      triggerError('Por favor, informe seu e-mail e sua senha de acesso.');
-      return;
-    }
+    if (!email || !password) { triggerError('Informe o e-mail e a senha de acesso.'); return; }
+    setLoading(true);
 
     const cleanedEmail = email.trim().toLowerCase();
 
-    // 1. Check if login matches Superuser/Master credentials
     const MASTER_CREDS = [
       { email: 'dadoskagiva@gmail.com', pass: 'admin' },
-      { email: 'master@clubos.com.br', pass: 'admin123' },
-      { email: 'master@clubos.com.br', pass: 'admin' },
-      { email: 'admin@clubos.com.br', pass: 'admin123' },
+      { email: 'master@clubos.com.br',  pass: 'admin123' },
+      { email: 'master@clubos.com.br',  pass: 'admin' },
+      { email: 'admin@clubos.com.br',   pass: 'admin123' },
     ];
-    const isMasterLogin = MASTER_CREDS.some(c => c.email === cleanedEmail && c.pass === password);
-    if (isMasterLogin) {
-      const masterClub: Club = {
-        id: 'master_admin',
-        name: 'Federação Central (Master Admin)',
-        city: 'Cascavel - PR',
-        categoryFocus: 'Controle Global Regulatório',
-        adminEmail: 'dadoskagiva@gmail.com',
-        passwordHash: 'admin',
-        players: [],
-        financials: [],
-        registeredAt: '2026-05-27'
-      };
-      
-      triggerSuccess('Credenciais administrativas validadas! Iniciando Painel Regulador...');
-      setTimeout(() => {
-        onLoginSuccess(masterClub);
-      }, 1000);
-      return;
-    }
-    
-    // Find in the modern DB
-    const foundClub = currentDB.find(c => 
-      c.adminEmail === cleanedEmail && 
-      c.passwordHash === password
-    );
 
-    if (foundClub) {
-      // Check for global lockdown status first
-      if (localStorage.getItem('CLUBOS_LOCKDOWN_STATUS') === 'LOCKED') {
-        triggerError('VETO DO CORREGEDOR: O Portal está operando sob lockdown técnico emergencial. Acesso restrito a Master.');
+    setTimeout(() => {
+      setLoading(false);
+
+      if (MASTER_CREDS.some(c => c.email === cleanedEmail && c.pass === password)) {
+        const masterClub: Club = {
+          id: 'master_admin', name: 'Federação Master', city: 'Nacional',
+          categoryFocus: 'Controle Global', adminEmail: cleanedEmail,
+          passwordHash: password, players: [], financials: [], registeredAt: '2026-05-27'
+        };
+        triggerSuccess('Acesso master validado!');
+        setTimeout(() => onLoginSuccess(masterClub), 800);
         return;
       }
-      
-      // Check if suspended
-      const suspendedList = localStorage.getItem('CLUBOS_SUSPENDED_CLUBS');
-      const isSusp = suspendedList ? JSON.parse(suspendedList).includes(foundClub.id) : false;
-      if (isSusp) {
-        triggerError('ACESSO BLOQUEADO: A licença deste clube foi suspensa pela Federação Master.');
+
+      const found = currentDB.find(c => c.adminEmail === cleanedEmail && c.passwordHash === password);
+      if (found) {
+        if (localStorage.getItem('CLUBOS_LOCKDOWN_STATUS') === 'LOCKED') { triggerError('Portal em lockdown emergencial. Acesso restrito ao Master.'); return; }
+        const suspended = localStorage.getItem('CLUBOS_SUSPENDED_CLUBS');
+        if (suspended && JSON.parse(suspended).includes(found.id)) { triggerError('Licença deste clube suspensa pela Federação.'); return; }
+        onLoginSuccess(found);
         return;
       }
-      onLoginSuccess(foundClub);
-    } else {
-      // Check if it exists in the 742 simulated list, if so registered on the fly for ease!
-      const simMatch = SIMULATED_FEDERATION_CLUBS.find(c => c.email.toLowerCase() === cleanedEmail);
-      if (simMatch && password === '123') {
-        if (localStorage.getItem('CLUBOS_LOCKDOWN_STATUS') === 'LOCKED') {
-          triggerError('VETO DO CORREGEDOR: O Portal está operando sob lockdown técnico emergencial. Acesso restrito a Master.');
-          return;
-        }
-        const newlySeeded = registerNewClub(
-          simMatch.name, 
-          simMatch.city, 
-          simMatch.focus, 
-          simMatch.email, 
-          '123'
-        );
-        onLoginSuccess(newlySeeded);
-      } else {
-        triggerError('Credenciais inválidas. Verifique o e-mail ou utilize o Fast-Login demonstrativo.');
+
+      const sim = SIMULATED_FEDERATION_CLUBS.find(c => c.email.toLowerCase() === cleanedEmail);
+      if (sim && password === '123') {
+        const seeded = registerNewClub(sim.name, sim.city, sim.focus, sim.email, '123');
+        onLoginSuccess(seeded);
+        return;
       }
-    }
+
+      triggerError('Credenciais inválidas. Verifique o e-mail ou use o acesso rápido abaixo.');
+    }, 600);
   };
 
-  // Handlers for quick 1-click Fast Login
   const handleFastLogin = (demoClub: typeof PRE_REGISTERED_CLUBS[0]) => {
-    const isMasterBypass = demoClub.id === 'master_admin';
-    if (isMasterBypass) {
+    if (demoClub.id === 'master_admin') {
       const masterClub: Club = {
-        id: 'master_admin',
-        name: 'Federação Central (Master Admin)',
-        city: 'Cascavel - PR',
-        categoryFocus: 'Controle Global Regulatório',
-        adminEmail: 'dadoskagiva@gmail.com',
-        passwordHash: 'admin',
-        players: [],
-        financials: [],
-        registeredAt: '2026-05-27'
+        id: 'master_admin', name: 'Federação Master', city: 'Nacional',
+        categoryFocus: 'Controle Global', adminEmail: 'master@clubos.com.br',
+        passwordHash: 'admin123', players: [], financials: [], registeredAt: '2026-05-27'
       };
       onLoginSuccess(masterClub);
       return;
     }
-
     const found = currentDB.find(c => c.id === demoClub.id);
-    if (found) {
-      // Check if suspended
-      const suspendedList = localStorage.getItem('CLUBOS_SUSPENDED_CLUBS');
-      const isSusp = suspendedList ? JSON.parse(suspendedList).includes(found.id) : false;
-      if (isSusp) {
-        triggerError('ACESSO BLOQUEADO: A licença deste clube foi suspensa pela Federação Master.');
-        return;
-      }
-      onLoginSuccess(found);
-    } else {
-      const newlySeeded = registerNewClub(
-        demoClub.name, 
-        demoClub.city, 
-        demoClub.focus, 
-        demoClub.email, 
-        demoClub.password
-      );
-      onLoginSuccess(newlySeeded);
-    }
+    if (found) { onLoginSuccess(found); return; }
+    onLoginSuccess(registerNewClub(demoClub.name, demoClub.city, demoClub.focus, demoClub.email, demoClub.password));
   };
 
-  // Custom simulation login on result click
   const handleResultClick = (club: any) => {
     setEmail(club.email || club.adminEmail);
-    setPassword('123'); // seed default access pass
+    setPassword('123');
     setSearchQuery('');
-    triggerSuccess(`Preenchido! Login para ${club.name} configurado. Senha padrão: 123.`);
+    triggerSuccess(`Login preenchido para ${club.name}. Senha padrão: 123`);
   };
 
-  // Submit register new club
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regName || !regCity || !regEmail || !regPassword) {
-      triggerError('Campos obrigatórios estão vazios. Preencha Nome, Cidade, E-mail e Senha.');
-      return;
-    }
+    if (!regName || !regCity || !regEmail || !regPassword) { triggerError('Preencha todos os campos obrigatórios.'); return; }
+    if (currentDB.some(c => c.adminEmail === regEmail.trim().toLowerCase())) { triggerError('E-mail já cadastrado.'); return; }
+    const newClub = registerNewClub(regName, regCity, regFocus, regEmail, regPassword);
+    triggerSuccess(`${regName} credenciado! Inicializando painel...`);
+    setTimeout(() => onLoginSuccess(newClub), 900);
+  };
 
-    const emailInUse = currentDB.some(c => c.adminEmail === regEmail.trim().toLowerCase());
-    if (emailInUse) {
-      triggerError('Este e-mail corporativo de diretor de clube já está cadastrado.');
-      return;
-    }
+  /* ── FEATURES (cards de benefícios) ──────────────────────────────────── */
+  const features = [
+    { icon: Users,     color: 'blue',   title: 'Gestão de Atletas',   desc: 'Prontuários completos, carteirinhas QR Code, histórico de performance e documentação digital.' },
+    { icon: TrendingUp,color: 'emerald',title: 'Financeiro Completo', desc: 'Controle de mensalidades, inadimplência, receitas de patrocinadores e fluxo de caixa.' },
+    { icon: Trophy,    color: 'amber',  title: 'Rankings & Avaliações',desc: 'Score individual por desempenho técnico, tático, físico e disciplina. Relatórios automáticos.' },
+    { icon: Zap,       color: 'violet', title: 'Multi-Clube em Tempo Real', desc: 'Plataforma federativa com suporte a 700+ clubes cadastrados. Acesso hierárquico.' },
+  ];
 
-    // Register & log in instantly
-    const newClub = registerNewClub(
-      regName,
-      regCity,
-      regFocus,
-      regEmail,
-      regPassword
-    );
-
-    triggerSuccess(`Clube ${regName} credenciado com sucesso! Inicializando prontuário...`);
-    setTimeout(() => {
-      onLoginSuccess(newClub);
-    }, 1000);
+  const colorMap: Record<string, string> = {
+    blue:   'bg-blue-500/10 border-blue-500/20 text-blue-400',
+    emerald:'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+    amber:  'bg-amber-500/10 border-amber-500/20 text-amber-400',
+    violet: 'bg-violet-500/10 border-violet-500/20 text-violet-400',
   };
 
   return (
-    <div className="min-h-screen bg-[#070708] flex items-center justify-center p-4 md:p-6 text-slate-200">
-      
-      {/* Dynamic background lights */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="min-h-dvh bg-[#060608] flex items-center justify-center p-4 md:p-6 text-slate-200 overflow-auto">
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
-        
-        {/* LEFT COLUMN: Visual Brand & Live Scale Stats */}
-        <div className="lg:col-span-5 flex flex-col justify-between py-6 space-y-8">
+      {/* Fundo animado */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], opacity: [0.06, 0.12, 0.06] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-blue-600 rounded-full blur-[120px]"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], opacity: [0.04, 0.08, 0.04] }}
+          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+          className="absolute bottom-[-15%] right-[-10%] w-[60vw] h-[60vw] bg-violet-600 rounded-full blur-[100px]"
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+
+        {/* ── COLUNA ESQUERDA: Copy & Features ─────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, x: -32 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="lg:col-span-6 flex flex-col gap-8"
+        >
+          {/* Brand */}
           <div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 text-lg">
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+              className="flex items-center gap-3 mb-6"
+            >
+              <div className="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-white text-xl shadow-xl shadow-blue-600/30">
                 C
               </div>
               <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-white leading-none">
-                  CLUB<span className="text-blue-500 font-black italic">OS</span>
+                <h1 className="text-3xl font-black tracking-tight text-white leading-none">
+                  CLUB<span className="text-blue-400 italic">OS</span>
                 </h1>
-                <span className="text-[10px] text-slate-400 font-mono tracking-widest uppercase block mt-1">Multi-Tenant Grid Control</span>
+                <p className="text-[10px] text-slate-500 font-mono tracking-[0.2em] uppercase mt-0.5">by CA.RO TECH</p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="mt-10 space-y-4">
-              <h2 className="text-2xl font-black text-white leading-tight font-sans tracking-tight">
-                Painel Esportivo Integrado para <span className="text-blue-400">Centenas de Clubes</span>.
-              </h2>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                Uma infraestrutura completa de multilocação (sharded data storage). Cada secretaria esportiva possui uma instância isolada para gerenciar atletas, emitir carteirinhas QR Code, registrar mensalidades e gerenciar avaliações.
-              </p>
-            </div>
+            {/* Headline principal */}
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="text-3xl sm:text-4xl font-black text-white leading-[1.15] tracking-tight mb-4"
+            >
+              O Sistema que{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+                Federações e Clubes
+              </span>{' '}
+              precisavam.
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="text-sm text-slate-400 leading-relaxed max-w-lg"
+            >
+              Gerencie atletas, mensalidades, presenças e rankings — tudo em um painel unificado.
+              Do Sub‑15 ao time principal, do amador ao semiprofissional. Tecnologia de ponta
+              para o futebol de base brasileiro.
+            </motion.p>
           </div>
 
-          {/* Federated Club Counters */}
-          <div className="space-y-4">
-            <div className="bg-[#111113]/80 border border-slate-800/80 p-4 rounded-2xl flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center font-bold shrink-0 text-lg">
-                742
-              </div>
-              <div className="text-xs leading-normal">
-                <p className="font-bold text-white">Clubes Ativos Atualmente</p>
-                <p className="text-[11px] text-slate-400">Inscritos e monitorados por Federações Estaduais de Várzea e Juniores.</p>
-              </div>
-            </div>
-
-            <div className="bg-[#111113]/80 border border-slate-800/80 p-4 rounded-2xl flex items-center gap-4">
-              <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center shrink-0">
-                <Globe className="w-6 h-6 text-emerald-400" />
-              </div>
-              <div className="text-xs leading-normal">
-                <p className="font-bold text-white">Prontuário Descentralizado</p>
-                <p className="text-[11px] text-slate-400">Total segurança de dados com localStorage replicável em Cloud SQL.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Client Brand Footer */}
-          <div className="text-[10px] text-slate-500 leading-normal flex items-center gap-3">
-            <span className="bg-slate-800 px-2 py-0.5 rounded font-mono font-bold text-xs text-amber-500">CA.RO TECH</span>
-            <span>Enterprise Multi-Club Solution v4.2</span>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Authentication Card */}
-        <div className="lg:col-span-7 bg-[#111113] border border-slate-800/90 rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col justify-between">
-          
-          <div>
-            {/* Mode selection tabs */}
-            <div className="flex border-b border-slate-800 pb-4 mb-6">
-              <button
-                onClick={() => {
-                  setIsRegisterMode(false);
-                  setErrorMsg(null);
-                }}
-                className={`pb-2 text-sm font-bold tracking-wide uppercase transition-all relative px-3 ${
-                  !isRegisterMode ? 'text-white' : 'text-slate-500 hover:text-slate-350'
-                }`}
+          {/* Feature cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {features.map(({ icon: Icon, color, title, desc }, i) => (
+              <motion.div
+                key={title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 + i * 0.08, duration: 0.5 }}
+                className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.05] transition-colors"
               >
-                {!isRegisterMode && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded"></span>}
-                Acessar meu Clube
-              </button>
-              <button
-                onClick={() => {
-                  setIsRegisterMode(true);
-                  setErrorMsg(null);
-                }}
-                className={`pb-2 text-sm font-bold tracking-wide uppercase transition-all relative px-3 ml-6 ${
-                  isRegisterMode ? 'text-white' : 'text-slate-500 hover:text-slate-350'
-                }`}
-              >
-                {isRegisterMode && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded"></span>}
-                Novo Credenciamento
-              </button>
-            </div>
-
-            {/* Simulated Federation Live Search (Only when logging in to demonstrate the 700+ clubs access) */}
-            {!isRegisterMode && (
-              <div className="mb-6 relative">
-                <label className="text-[10px] font-black uppercase text-slate-400 block mb-2 tracking-widest flex items-center gap-2">
-                  <Search className="w-3.5 h-3.5 text-blue-400" />
-                  Localizador de Clubes Federados (Busca Inteligente)
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Digite seu time para carregar (Ex: Barcelona, Bahia, Real Jaraguá...)"
-                    className="w-full bg-[#080809] border border-slate-800/80 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors"
-                  />
-                  <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <div className={`w-8 h-8 rounded-xl border flex items-center justify-center mb-3 ${colorMap[color]}`}>
+                  <Icon className="w-4 h-4" />
                 </div>
+                <p className="text-xs font-bold text-white mb-1">{title}</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">{desc}</p>
+              </motion.div>
+            ))}
+          </div>
 
-                {/* Display matched clubs dynamically */}
+          {/* Social proof */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
+            className="flex items-center gap-4 text-[11px] text-slate-500"
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-2">
+                {['bg-blue-500','bg-emerald-500','bg-amber-500','bg-violet-500'].map((c,i) => (
+                  <div key={i} className={`w-6 h-6 rounded-full border-2 border-[#060608] ${c}`} />
+                ))}
+              </div>
+              <span><strong className="text-white">742+</strong> clubes ativos</span>
+            </div>
+            <span className="text-slate-700">•</span>
+            <span><strong className="text-white">8.400+</strong> atletas gerenciados</span>
+          </motion.div>
+        </motion.div>
+
+        {/* ── COLUNA DIREITA: Card de login ────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, x: 32 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="lg:col-span-6 bg-[#0f0f12] border border-white/[0.07] rounded-3xl shadow-2xl p-6 sm:p-8"
+        >
+          {/* Tabs */}
+          <div className="flex border-b border-slate-800/80 pb-4 mb-6 gap-1">
+            {[
+              { label: 'Entrar no clube', mode: false },
+              { label: 'Novo credenciamento', mode: true },
+            ].map(({ label, mode }) => (
+              <button
+                key={label}
+                onClick={() => { setIsRegisterMode(mode); setErrorMsg(null); }}
+                className={`relative pb-2 px-3 text-sm font-bold tracking-wide transition-colors ${
+                  isRegisterMode === mode ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {label}
+                {isRegisterMode === mode && (
+                  <motion.span layoutId="tab-underline"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          {!isRegisterMode && (
+            <div className="mb-5 relative">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Buscar clube (ex: Barcelona, Real Jaraguá...)"
+                  className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/60 transition"
+                />
+              </div>
+              <AnimatePresence>
                 {searchQuery && (
-                  <div className="absolute left-0 right-0 mt-2 bg-[#18181B] border border-slate-800 rounded-xl shadow-2xl z-50 p-2 space-y-1">
-                    <p className="text-[9px] text-slate-500 font-black uppercase px-2 py-1 border-b border-slate-800/50 mb-1">
-                      Resultados encontrados ({searchResults.length} de 742 clubes)
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                    className="absolute left-0 right-0 mt-2 bg-[#18181b] border border-slate-800 rounded-2xl shadow-2xl z-50 p-2 space-y-1"
+                  >
+                    <p className="text-[9px] text-slate-500 font-black uppercase px-2 py-1">
+                      {searchResults.length} resultado(s)
                     </p>
-                    {searchResults.map((club, idx) => (
-                      <div
-                        key={club.id}
-                        onClick={() => handleResultClick(club)}
-                        className="p-2.5 hover:bg-[#202024] rounded-lg transition-colors cursor-pointer flex items-center justify-between text-xs"
-                      >
+                    {searchResults.map(club => (
+                      <div key={club.id} onClick={() => handleResultClick(club)}
+                        className="p-2.5 hover:bg-white/5 rounded-xl transition-colors cursor-pointer flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                          <Building2 className="w-4 h-4 text-blue-400" />
+                          <Building2 className="w-4 h-4 text-blue-400 shrink-0" />
                           <div>
-                            <span className="font-bold text-slate-200 block">{club.name}</span>
-                            <span className="text-[10px] text-slate-400 block">{club.city}</span>
+                            <p className="text-xs font-bold text-white">{club.name}</p>
+                            <p className="text-[10px] text-slate-500">{club.city}</p>
                           </div>
                         </div>
-                        <span className="text-[9px] bg-blue-600/10 text-blue-400 px-2 py-0.5 rounded font-mono font-extrabold uppercase">
-                          Clique p/ logar
-                        </span>
+                        <span className="text-[9px] bg-blue-600/10 text-blue-400 px-2 py-0.5 rounded-lg font-bold">Preencher</span>
                       </div>
                     ))}
                     {searchResults.length === 0 && (
-                      <div className="p-3 text-center text-slate-500 text-[11px]">
-                        Nenhum clube correspondente nos registros federativos. Cadastre como novo clube ao lado!
-                      </div>
+                      <p className="p-3 text-center text-slate-500 text-xs">Nenhum clube encontrado</p>
                     )}
-                  </div>
+                  </motion.div>
                 )}
-              </div>
-            )}
-
-            {/* Notification messages */}
-            {errorMsg && (
-              <div className="bg-rose-500/5 border border-rose-500/25 p-3 rounded-xl flex items-start gap-2.5 text-xs text-rose-400 mb-6 font-sans">
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-            {successMsg && (
-              <div className="bg-emerald-500/5 border border-emerald-500/25 p-3 rounded-xl flex items-start gap-2.5 text-xs text-emerald-400 mb-6 font-sans">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>{successMsg}</span>
-              </div>
-            )}
-
-            {/* MODE 1: LOGIN FORM */}
-            {!isRegisterMode ? (
-              <form onSubmit={handleLogin} className="space-y-4 text-xs font-sans">
-                <div>
-                  <label className="text-slate-400 block mb-1.5 font-semibold">E-mail do Gestor Esportivo</label>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="seuemail@clube.com"
-                      className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                      required
-                    />
-                    <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-slate-400 block mb-1.5 font-semibold">Chave de Segurança (Senha)</label>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Sua senha corporativa de clube"
-                      className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                      required
-                    />
-                    <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
-                >
-                  Confirmar Acesso à Súmula Geral
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            ) : (
-              /* MODE 2: REGISTER FORM */
-              <form onSubmit={handleRegister} className="space-y-4 text-xs font-sans">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-slate-400 block mb-1.5 font-semibold">Nome Oficial do Clube</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={regName}
-                        onChange={(e) => setRegName(e.target.value)}
-                        placeholder="Ex: Real Jabaquara F.C."
-                        className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                        required
-                      />
-                      <Building2 className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-400 block mb-1.5 font-semibold">Cidade & Estado (UF)</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={regCity}
-                        onChange={(e) => setRegCity(e.target.value)}
-                        placeholder="Ex: Santos - SP"
-                        className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                        required
-                      />
-                      <Globe className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-slate-400 block mb-1.5 font-semibold">E-mail Administrativo</label>
-                    <div className="relative">
-                      <input
-                        type="email"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="Ex: diretoria@clube.com"
-                        className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                        required
-                      />
-                      <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-400 block mb-1.5 font-semibold">Senha Secreta do Diretor</label>
-                    <div className="relative">
-                      <input
-                        type="password"
-                        value={regPassword}
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        placeholder="Defina sua senha esportiva"
-                        className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                        required
-                      />
-                      <Key className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-slate-400 block mb-1.5 font-semibold">Foco Esportivo / Categorias Ativas</label>
-                  <select
-                    value={regFocus}
-                    onChange={(e) => setRegFocus(e.target.value)}
-                    className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:outline-none focus:border-blue-500 transition-colors"
-                  >
-                    <option value="Categoria de Base Completa">Categoria de Base Completa (Sub-15 ao Sub-20)</option>
-                    <option value="Futebol Amador Adulto / Veteranos">Futebol Amador Adulto / Veteranos (+35)</option>
-                    <option value="Iniciação Infantil">Iniciação Infantil (Sub-9 ao Sub-13)</option>
-                    <option value="Futebol Profissional Rendimento">Futebol Profissional Rendimento</option>
-                  </select>
-                </div>
-
-                <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80 flex items-start gap-2.5 text-[10px] text-slate-450 text-slate-450 text-slate-400 leading-normal">
-                  <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-white block mb-0.5">Seeding de Atletas Ativo</span>
-                    Seu novo clube será inicializado com uma equipe preliminar de 4 grandes atletas prototipados para manter os scores, controle tático de frequências, e fluxo financeiro em pleno funcionamento.
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
-                >
-                  Registrar & Credenciar Unidade Esportiva
-                  <Plus className="w-4 h-4" />
-                </button>
-              </form>
-            )}
-          </div>
-
-          {/* Demonstration Quick Account Bypasses */}
-          {!isRegisterMode && (
-            <div className="mt-6 pt-5 border-t border-slate-800/80 space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Fast Access (Demonstrativos CARO TECH)</span>
-              </div>
-              <p className="text-[10px] text-slate-500">Acesse o portal do clube ou assuma o controle macro da federação imediatamente:</p>
-              
-              {/* Premium Master Bypass Button */}
-              <div className="mb-2.5">
-                <button
-                  onClick={() => handleFastLogin({ id: 'master_admin', name: 'Federação Central', city: 'Nacional', focus: 'Controle Global Regulatório', email: 'master@clubos.com.br', password: 'admin123', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=80&auto=format&fit=crop' })}
-                  type="button"
-                  className="w-full p-3 bg-gradient-to-r from-amber-600/20 to-amber-500/10 hover:from-amber-600/30 hover:to-amber-500/20 border border-amber-500/50 text-left transition flex items-center justify-between rounded-xl text-xs cursor-pointer shadow-lg shadow-amber-900/20"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <ShieldCheck className="w-6 h-6 text-amber-400 shrink-0" />
-                    <div>
-                      <span className="font-extrabold text-amber-300 block uppercase tracking-wider text-[11px]">🔐 MASTER ADMIN — Clique aqui para entrar</span>
-                      <span className="text-[9px] text-slate-400 block font-mono mt-0.5">master@clubos.com.br • senha: admin123</span>
-                    </div>
-                  </div>
-                  <span className="bg-amber-500 text-slate-950 px-3 py-1 rounded-lg font-black uppercase text-[9px] tracking-wider shrink-0 animate-pulse">
-                    ENTRAR
-                  </span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {[
-                  { ...PRE_REGISTERED_CLUBS[0], title: 'Kagiva FC' },
-                  { ...PRE_REGISTERED_CLUBS[1], title: 'Flamenguinho' },
-                  { ...PRE_REGISTERED_CLUBS[2], title: 'Barcelona' }
-                ].map((demo) => (
-                  <button
-                    key={demo.id}
-                    onClick={() => handleFastLogin(demo)}
-                    type="button"
-                    className="p-2 bg-[#09090B] border border-slate-800/85 hover:bg-[#151518] rounded-xl text-left transition flex items-center gap-2 text-[10px] cursor-pointer"
-                  >
-                    <img 
-                      src={demo.avatar} 
-                      alt={demo.title} 
-                      referrerPolicy="no-referrer"
-                      className="w-6 h-6 rounded-full object-cover border border-slate-700 shrink-0" 
-                    />
-                    <div className="truncate">
-                      <span className="font-bold text-white block truncate text-[9px]">{demo.title}</span>
-                      <span className="text-[8px] text-slate-500 block font-mono leading-tight">Senha: {demo.password}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              </AnimatePresence>
             </div>
           )}
 
-        </div>
+          {/* Alertas */}
+          <AnimatePresence>
+            {errorMsg && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="bg-rose-500/5 border border-rose-500/20 p-3 rounded-xl flex gap-2.5 text-xs text-rose-400 mb-5">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </motion.div>
+            )}
+            {successMsg && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl flex gap-2.5 text-xs text-emerald-400 mb-5">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{successMsg}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
+          <AnimatePresence mode="wait">
+            {/* ── FORMULÁRIO LOGIN ──────────────────────────────────────── */}
+            {!isRegisterMode ? (
+              <motion.form key="login" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.25 }}
+                onSubmit={handleLogin} className="space-y-4">
+
+                <div>
+                  <label className="text-[11px] text-slate-400 font-semibold block mb-1.5">E-mail do gestor</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500 pointer-events-none" />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                      placeholder="email@clube.com.br" required
+                      className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/60 transition" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-400 font-semibold block mb-1.5">Senha</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500 pointer-events-none" />
+                    <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                      placeholder="Sua senha de acesso" required
+                      className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/60 transition" />
+                  </div>
+                </div>
+
+                <button type="submit" disabled={loading}
+                  className="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:opacity-60
+                             text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30">
+                  {loading ? (
+                    <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                      className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
+                  ) : (
+                    <><span>Acessar painel</span><ArrowRight className="w-4 h-4" /></>
+                  )}
+                </button>
+
+                {/* Acesso rápido */}
+                <div className="pt-4 border-t border-slate-800/60 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Acesso rápido — demonstração</span>
+                  </div>
+
+                  {/* Master */}
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleFastLogin({ id: 'master_admin', name: 'Federação Master', city: 'Nacional', focus: 'Controle Global', email: 'master@clubos.com.br', password: 'admin123', avatar: '' })}
+                    type="button"
+                    className="w-full flex items-center justify-between gap-3 p-3.5
+                               bg-gradient-to-r from-amber-500/10 to-amber-400/5
+                               border border-amber-500/30 rounded-2xl cursor-pointer
+                               hover:border-amber-500/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center justify-center shrink-0">
+                        <ShieldCheck className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <div className="min-w-0 text-left">
+                        <p className="text-xs font-extrabold text-amber-300 uppercase tracking-wide leading-tight">Master Admin</p>
+                        <p className="text-[10px] text-slate-500 font-mono truncate">master@clubos.com.br</p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 bg-amber-500 text-slate-900 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg animate-pulse">
+                      Entrar
+                    </span>
+                  </motion.button>
+
+                  {/* Clubes demo */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {PRE_REGISTERED_CLUBS.slice(0, 3).map(demo => (
+                      <motion.button
+                        key={demo.id}
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => handleFastLogin(demo)}
+                        type="button"
+                        className="flex flex-col items-center gap-1.5 p-2.5 bg-[#090909] border border-slate-800/80
+                                   hover:border-slate-700 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <img src={demo.avatar} alt={demo.name} referrerPolicy="no-referrer"
+                          className="w-7 h-7 rounded-full object-cover border border-slate-700 shrink-0" />
+                        <span className="text-[9px] font-bold text-slate-300 text-center leading-tight line-clamp-1">
+                          {demo.name.split(' ')[0]}
+                        </span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </motion.form>
+
+            ) : (
+              /* ── FORMULÁRIO REGISTRO ──────────────────────────────────── */
+              <motion.form key="register" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}
+                onSubmit={handleRegister} className="space-y-4">
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="text-[11px] text-slate-400 font-semibold block mb-1.5">Nome do clube</label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3.5 top-3 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <input type="text" value={regName} onChange={e => setRegName(e.target.value)}
+                        placeholder="Ex: Real Jabaquara F.C." required
+                        className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/60 transition" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400 font-semibold block mb-1.5">Cidade — UF</label>
+                    <div className="relative">
+                      <Globe className="absolute left-3.5 top-3 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <input type="text" value={regCity} onChange={e => setRegCity(e.target.value)}
+                        placeholder="Santos — SP" required
+                        className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/60 transition" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400 font-semibold block mb-1.5">E-mail admin</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)}
+                        placeholder="dir@clube.com" required
+                        className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/60 transition" />
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[11px] text-slate-400 font-semibold block mb-1.5">Senha</label>
+                    <div className="relative">
+                      <Key className="absolute left-3.5 top-3 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)}
+                        placeholder="Crie sua senha" required
+                        className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/60 transition" />
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[11px] text-slate-400 font-semibold block mb-1.5">Foco esportivo</label>
+                    <select value={regFocus} onChange={e => setRegFocus(e.target.value)}
+                      className="w-full bg-[#080809] border border-slate-800 rounded-xl py-2.5 px-3.5 text-slate-300 focus:outline-none focus:border-blue-500/60 transition">
+                      <option>Categoria de Base Completa</option>
+                      <option>Futebol Amador Adulto / Veteranos</option>
+                      <option>Iniciação Infantil (Sub-9 ao Sub-13)</option>
+                      <option>Futebol Profissional Rendimento</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="bg-blue-500/5 border border-blue-500/15 p-3 rounded-xl flex gap-2.5 text-[11px] text-slate-400">
+                  <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                  <span>Seu clube será inicializado com 4 atletas de demonstração e histórico financeiro de base.</span>
+                </div>
+
+                <button type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700
+                             text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30">
+                  <span>Credenciar meu clube</span>
+                  <Plus className="w-4 h-4" />
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
-
     </div>
   );
 }

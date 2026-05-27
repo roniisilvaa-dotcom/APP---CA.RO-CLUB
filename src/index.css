@@ -7,20 +7,66 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+/* ─── MOBILE FIX GLOBAL ───────────────────────────────────────────────────── */
+
+/* Usa dvh (dynamic viewport height) para evitar o jump da barra do browser */
+html {
+  height: -webkit-fill-available;
+  height: 100dvh;
+}
+
 body {
   background-color: #09090B;
   color: #E2E8F0;
   font-family: var(--font-sans);
+  /* Impede zoom em qualquer toque acidental */
+  touch-action: pan-x pan-y;
+  /* Layout fixo — sem bounce scroll */
+  overscroll-behavior: none;
+  overflow: hidden;
+  height: 100dvh;
+  height: -webkit-fill-available;
 }
 
-/* Custom Scrollbar for premium feel */
+#root {
+  height: 100dvh;
+  height: -webkit-fill-available;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Impede zoom no iOS ao focar inputs (font-size >= 16px) */
+input,
+select,
+textarea {
+  font-size: 16px !important;
+}
+
+/* Inputs com texto menor visualmente mas sem zoom */
+input.text-xs,
+select.text-xs,
+textarea.text-xs,
+input[class*="text-"],
+select[class*="text-"],
+textarea[class*="text-"] {
+  font-size: 16px !important;
+}
+
+/* Impede seleção de texto acidental em botões mobile */
+button {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Scrollbar premium */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090B;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -31,3 +77,16 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #3F3F46;
 }
+
+/* Mobile: sem scrollbar visível */
+@media (max-width: 1024px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ─── SAFE AREA (iPhone com notch/Dynamic Island) ─────────────────────────── */
+.safe-top    { padding-top:    env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-left   { padding-left:   env(safe-area-inset-left); }
+.safe-right  { padding-right:  env(safe-area-inset-right); }

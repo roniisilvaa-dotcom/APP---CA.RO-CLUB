@@ -370,18 +370,30 @@ export default function App() {
     return <ClubLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
+  // Mobile nav items
+  const mobileNavItems = [
+    ...(currentClub.id === 'master_admin' ? [{ id: 'master', label: 'Master', icon: FolderLock }] : []),
+    { id: 'dashboard',      label: 'Início',     icon: LayoutDashboard },
+    { id: 'players',        label: 'Atletas',    icon: Users },
+    { id: 'financial',      label: 'Financeiro', icon: CreditCard },
+    { id: 'attendance',     label: 'Chamada',    icon: CalendarCheck },
+    { id: 'rankings',       label: 'Rankings',   icon: Award },
+    { id: 'specifications', label: 'SaaS',       icon: BookOpen },
+  ];
+
+  const activeClubName  = (impersonateClub ?? currentClub).name;
+  const activeClubLogo  = (impersonateClub ?? currentClub).logoUrl;
+
   return (
-    <div className="min-h-screen bg-[#09090B] flex font-sans text-slate-200">
-      
-      {/* Sidebar navigation */}
+    /* ── raiz: altura exata da viewport, sem bounce ───────────────────────── */
+    <div className="h-dvh bg-[#09090B] flex font-sans text-slate-200 overflow-hidden">
+
+      {/* ── SIDEBAR — só desktop ─────────────────────────────────────────── */}
       <aside className="hidden lg:flex w-64 bg-[#111113] border-r border-[#1a1a1f] flex-col justify-between shrink-0">
         <div>
-          {/* Logo brand badge */}
           <div className="p-6 border-b border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-[0_0_15px_-3px_rgba(37,99,235,0.4)]">
-                C
-              </div>
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-[0_0_15px_-3px_rgba(37,99,235,0.4)]">C</div>
               <h1 className="text-xl font-bold tracking-tight text-white">
                 CLUB<span className="text-blue-500 font-black italic">OS</span>
               </h1>
@@ -390,8 +402,7 @@ export default function App() {
 
           <div className="p-4 space-y-1">
             <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-3 ml-2">Gestão Estratégica</div>
-            
-            {/* Exclusive Global Administration Control Tab */}
+
             {currentClub.id === 'master_admin' && (
               <button
                 onClick={() => setActiveTab('master')}
@@ -407,155 +418,121 @@ export default function App() {
             )}
 
             {[
-              { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-              { id: 'players', label: 'Atletas & Categorias', icon: Users },
-              { id: 'financial', label: 'Financeiro Premium', icon: CreditCard },
-              { id: 'attendance', label: 'Controle de Chamada', icon: CalendarCheck },
-              { id: 'rankings', label: 'Avaliações & Rankings', icon: Award },
-              { id: 'specifications', label: 'Especificações SaaS', icon: BookOpen }
-            ].map((btn) => {
-              const Icon = btn.icon;
-              return (
-                <button
-                  key={btn.id}
-                  onClick={() => setActiveTab(btn.id as any)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
-                    activeTab === btn.id
-                      ? 'bg-blue-600/10 text-blue-400 rounded-lg border border-blue-500/20 shadow-inner'
-                      : 'text-slate-400 border border-transparent hover:bg-slate-800/40 hover:text-slate-200'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 text-slate-400 shrink-0" />
-                  {btn.label}
-                </button>
-              );
-            })}
+              { id: 'dashboard',      label: 'Dashboard',           icon: LayoutDashboard },
+              { id: 'players',        label: 'Atletas & Categorias', icon: Users },
+              { id: 'financial',      label: 'Financeiro Premium',  icon: CreditCard },
+              { id: 'attendance',     label: 'Controle de Chamada', icon: CalendarCheck },
+              { id: 'rankings',       label: 'Avaliações & Rankings',icon: Award },
+              { id: 'specifications', label: 'Especificações SaaS', icon: BookOpen },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id as any)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                  activeTab === id
+                    ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-inner'
+                    : 'text-slate-400 border border-transparent hover:bg-slate-800/40 hover:text-slate-200'
+                }`}
+              >
+                <Icon className="w-4 h-4 text-slate-400 shrink-0" />
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Footer info showing active workspace email and Developer brand */}
         <div className="p-4 border-t border-slate-800">
           <div className="bg-[#18181B] p-3 rounded-xl border border-[#1d1d21]">
             <p className="text-[9px] text-slate-500 uppercase font-black tracking-wide mb-1">
               {currentClub.id === 'master_admin' ? 'Acesso Master • Federação' : 'Clube • Diretor Ativo'}
             </p>
-            <p className="text-xs text-white font-semibold truncate" title={currentClub.adminEmail}>{currentClub.adminEmail}</p>
+            <p className="text-xs text-white font-semibold truncate">{currentClub.adminEmail}</p>
             <p className="text-[10px] text-blue-400 font-bold mt-1.5 flex items-center justify-between">
               <span>{currentClub.id === 'master_admin' ? 'Master Authority' : 'Enterprise Hub'}</span>
               <span className="text-amber-500 font-extrabold text-[8px] tracking-widest bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">CA.RO TECH</span>
             </p>
           </div>
-          <div className="text-center mt-2.5">
-            <p className="text-[9px] text-slate-500 font-semibold tracking-wider">
-              Desenvolvedor: <span className="text-slate-350 font-bold">CA.RO TECH</span>
-            </p>
-          </div>
+          <p className="text-center mt-2.5 text-[9px] text-slate-500 font-semibold tracking-wider">
+            Desenvolvedor: <span className="font-bold">CA.RO TECH</span>
+          </p>
         </div>
       </aside>
 
-      {/* Main app panel layout */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0A0A0B]">
-        
-        {/* Header toolbar for mobile and general actions */}
-        <header className="h-20 border-b border-[#1b1b22] flex items-center justify-between px-6 bg-[#09090B]/85 backdrop-blur-md sticky top-0 z-10 shrink-0">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-md">
-              C
-            </div>
-            <h1 className="text-lg font-bold tracking-tight text-white">
+      {/* ── ÁREA PRINCIPAL ────────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0A0A0B] overflow-hidden">
+
+        {/* HEADER FIXO — não mexe nunca, nem no scroll nem na barra do browser */}
+        <header className="flex-none h-14 border-b border-[#1b1b22] flex items-center justify-between px-4
+                           bg-[#09090B] lg:bg-[#09090B]/90 lg:backdrop-blur-md z-30
+                           safe-top">
+          {/* Logo — só mobile */}
+          <div className="flex items-center gap-2.5 lg:hidden">
+            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-md">C</div>
+            <span className="text-base font-bold tracking-tight text-white">
               CLUB<span className="text-blue-500 font-black italic">OS</span>
-            </h1>
+            </span>
           </div>
-          
-          <div className="flex items-center gap-4 text-xs ml-auto">
-            {/* Nav icons on Mobile */}
-            <div className="flex lg:hidden gap-1 bg-slate-900/40 p-1 rounded-lg border border-slate-800">
-              {currentClub.id === 'master_admin' && (
-                <button
-                  onClick={() => setActiveTab('master')}
-                  className={`p-2 rounded ${
-                    activeTab === 'master' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'text-amber-400'
-                  }`}
-                  title="Painel Master"
-                >
-                  <FolderLock className="w-4 h-4" />
-                </button>
-              )}
-              {[
-                { id: 'dashboard', icon: LayoutDashboard },
-                { id: 'players', icon: Users },
-                { id: 'financial', icon: CreditCard },
-                { id: 'attendance', icon: CalendarCheck },
-                { id: 'rankings', icon: Award },
-                { id: 'specifications', icon: BookOpen }
-              ].map((m) => {
-                const Icon = m.icon;
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => setActiveTab(m.id as any)}
-                    className={`p-2 rounded ${
-                      activeTab === m.id ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </button>
-                );
-              })}
+
+          {/* Status do clube — desktop */}
+          <div className="hidden lg:flex items-center gap-2 text-slate-400 font-mono text-[10px]">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            Painel: <strong className="text-white font-black ml-1">{activeClubName}</strong>
+          </div>
+
+          {/* Ações direita */}
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Status mobile */}
+            <div className="flex lg:hidden items-center gap-1.5 bg-[#111113] px-2.5 py-1.5 rounded-lg border border-slate-800 text-[10px] text-slate-400 max-w-[140px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+              <span className="truncate font-semibold text-white">{activeClubName}</span>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 bg-[#111113] px-3.5 py-2 rounded-xl border border-slate-800 text-slate-400 font-mono text-[10px]">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              Painel: <strong className="text-white font-black">{impersonateClub ? impersonateClub.name : currentClub.name}</strong> • {impersonateClub ? impersonateClub.city : currentClub.city}
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleLogout}
-                className="p-2.5 bg-rose-600/10 hover:bg-rose-600/20 border border-rose-500/25 text-rose-450 text-rose-400 rounded-xl cursor-pointer transition-colors flex items-center gap-1.5 font-bold font-sans"
-                title="Sair do Sistema"
-              >
-                <LogoutIcon className="w-4 h-4 shrink-0" />
-                <span className="hidden md:inline text-[9px] uppercase tracking-wider">Sair</span>
-              </button>
+            {/* Avatar */}
+            {activeClubLogo ? (
+              <img src={activeClubLogo} alt={activeClubName} referrerPolicy="no-referrer"
+                className="w-8 h-8 rounded-full object-cover border border-slate-700 shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#111113] border border-slate-800 flex items-center justify-center font-black text-blue-400 text-xs shrink-0">
+                {activeClubName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
 
-              {(impersonateClub?.logoUrl || currentClub.logoUrl) ? (
-                <img
-                  src={impersonateClub ? impersonateClub.logoUrl : currentClub.logoUrl}
-                  alt={impersonateClub ? impersonateClub.name : currentClub.name}
-                  referrerPolicy="no-referrer"
-                  className="w-10 h-10 rounded-full object-cover border border-slate-700 shadow shrink-0"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-[#111113] border border-slate-800 flex items-center justify-center font-black text-blue-400 shadow">
-                  {(impersonateClub ? impersonateClub.name : currentClub.name).slice(0, 2).toUpperCase()}
-                </div>
-              )}
-            </div>
+            {/* Botão Sair */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-2 bg-rose-600/10 hover:bg-rose-600/20 active:bg-rose-600/30
+                         border border-rose-500/25 text-rose-400 rounded-xl transition-colors cursor-pointer shrink-0"
+              title="Sair"
+            >
+              <LogoutIcon className="w-4 h-4 shrink-0" />
+              <span className="hidden md:inline text-[10px] font-bold uppercase tracking-wider">Sair</span>
+            </button>
           </div>
         </header>
 
-        {/* Master Impersonation Warning Banner */}
+        {/* Banner de impersonação (master auditando clube) */}
         {currentClub.id === 'master_admin' && impersonateClub && (
-          <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-slate-100 px-6 py-4 border-b border-amber-600/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg relative z-20">
-            <div className="flex items-center gap-2.5">
-              <ShieldCheck className="w-5 h-5 text-amber-300 animate-pulse shrink-0" />
-              <div className="text-xs leading-normal">
-                <span className="font-extrabold uppercase tracking-wider block text-[10px] text-amber-200">MODO AUDITORIA ATIVO</span>
-                Navegando e auditando dados esportivos de <strong className="text-white underline font-semibold">{impersonateClub.name}</strong> ({impersonateClub.city}).
+          <div className="flex-none bg-gradient-to-r from-amber-600 to-amber-700 text-slate-100 px-4 py-3
+                          border-b border-amber-600/30 flex items-center justify-between gap-3 z-20">
+            <div className="flex items-center gap-2 min-w-0">
+              <ShieldCheck className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
+              <div className="text-[11px] leading-tight min-w-0">
+                <span className="font-extrabold uppercase tracking-wider text-amber-200 block text-[9px]">MODO AUDITORIA</span>
+                <span className="truncate block">Auditando <strong className="text-white">{impersonateClub.name}</strong></span>
               </div>
             </div>
             <button
               onClick={handleExitImpersonation}
-              className="bg-white text-slate-950 font-black text-[10px] tracking-wide uppercase px-4 py-2 rounded-lg transition-transform hover:scale-[1.02] cursor-pointer"
+              className="shrink-0 bg-white text-slate-950 font-black text-[9px] tracking-wide uppercase px-3 py-1.5 rounded-lg cursor-pointer"
             >
-              Retornar ao Painel Master (Sair)
+              Sair
             </button>
           </div>
         )}
 
-        {/* Outer content container */}
-        <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
+        {/* CONTEÚDO — só esta div scrolla */}
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 lg:p-8
+                        pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-8">
 
           {/* TAB: CENTRAL MASTER ADMIN */}
           {activeTab === 'master' && currentClub.id === 'master_admin' && (
@@ -802,6 +779,46 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── TAB BAR FIXA MOBILE (bottom nav como app nativo) ─────────────── */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40
+                      bg-[#0D0D0F]/95 backdrop-blur-xl
+                      border-t border-[#1e1e24]
+                      flex items-stretch
+                      safe-bottom"
+           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        {mobileNavItems.map(({ id, label, icon: Icon }) => {
+          const active = activeTab === id;
+          const isMaster = id === 'master';
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as any)}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-w-0
+                          transition-colors active:scale-95
+                          ${active
+                            ? isMaster ? 'text-amber-400' : 'text-blue-400'
+                            : 'text-slate-500'
+                          }`}
+            >
+              <div className={`relative flex items-center justify-center w-9 h-7 rounded-xl transition-colors
+                              ${active
+                                ? isMaster ? 'bg-amber-500/12' : 'bg-blue-500/12'
+                                : ''
+                              }`}>
+                <Icon className="w-[18px] h-[18px]" />
+                {active && (
+                  <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full
+                                   ${isMaster ? 'bg-amber-400' : 'bg-blue-400'}`} />
+                )}
+              </div>
+              <span className="text-[9px] font-semibold tracking-wide truncate w-full text-center leading-tight">
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
 
     </div>
   );
