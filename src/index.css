@@ -19,21 +19,26 @@ body {
   background-color: #09090B;
   color: #E2E8F0;
   font-family: var(--font-sans);
-  /* Impede zoom em qualquer toque acidental */
-  touch-action: pan-x pan-y;
-  /* Layout fixo — sem bounce scroll */
   overscroll-behavior: none;
+  /* NÃO colocamos overflow:hidden aqui — cada tela controla o próprio scroll */
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Classe aplicada pelo App quando logado — trava o scroll no body */
+body.app-active {
   overflow: hidden;
   height: 100dvh;
   height: -webkit-fill-available;
 }
 
-#root {
+body.app-active #root {
   height: 100dvh;
   height: -webkit-fill-available;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 /* Impede zoom no iOS ao focar inputs (font-size >= 16px) */

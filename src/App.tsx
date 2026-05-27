@@ -80,6 +80,16 @@ export default function App() {
     }
   }, []);
 
+  // Trava o scroll do body só quando logado (evita conflito com a tela de login)
+  useEffect(() => {
+    if (currentClub) {
+      document.body.classList.add('app-active');
+    } else {
+      document.body.classList.remove('app-active');
+    }
+    return () => document.body.classList.remove('app-active');
+  }, [currentClub]);
+
   // Update tabs automatically depending on master admin status
   useEffect(() => {
     if (currentClub) {
