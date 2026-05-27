@@ -1,0 +1,6 @@
+{
+  "name": "Club OS",
+  "description": "Premium sports management system for amateur, grassroot, and academy football clubs. Complete control over athletes, documents, performance, scores, subscriptions, and financial logs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
