@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="97" fill="url(#bg)"/>
+  <rect x="41" y="41" width="430" height="430" rx="68" fill="none" stroke="url(#accent)" stroke-width="6" opacity="0.4"/>
+  <text x="256" y="195" font-family="Arial Black,Arial,sans-serif" font-size="148" font-weight="900" fill="white" text-anchor="middle">CL</text>
+  <text x="256" y="343" font-family="Arial Black,Arial,sans-serif" font-size="102" font-weight="900" fill="#60a5fa" text-anchor="middle">UBOS</text>
+  <text x="256" y="420" font-family="Arial,sans-serif" font-size="33" fill="rgba(255,255,255,0.45)" text-anchor="middle" letter-spacing="2">CA.RO TECH</text>
+</svg>
